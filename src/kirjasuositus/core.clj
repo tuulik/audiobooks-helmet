@@ -28,13 +28,26 @@
       walk/keywordize-keys
       :records))
 
-(defn tee-haku-ja-suodata-helmetin-äänikirjat [kirjan-nimi]
+(defn kirjan-nimi-tulokseen [tulos]
+  (->> tulos
+       (map :title)
+       (str/join "/")))
+
+(defn poista-tyhjät [tulos]
+  (remove empty? tulos))
+
+(defn kirjoita-exceliin! [kirjannimet]
+  (let [wb (docjure/create-workbook "Sheet1" kirjannimet)]
+    (docjure/save-workbook! "äänikirjat.xlsx" wb)))
+
+(defn tee-haku-ja-suodata-helmetin-äänikirjat! [kirjan-nimi]
   (println "haetaan" kirjan-nimi)
   (-> kirjan-nimi
       tee-finna-haku
       muunna-hakutulos
       helmet-hakutuloksesta
-      äänikirjat-hakutuloksesta))
+      äänikirjat-hakutuloksesta
+      kirjan-nimi-tulokseen))
 
 (defn lue-kirjannimet-excelistä []
   (->> (docjure/load-workbook-from-resource "stories siivottu.xlsx")
@@ -44,4 +57,7 @@
 (defn lue-kirjat-excelistä-ja-tee-haku []
   (->> (lue-kirjannimet-excelistä)
        (map :nimi)
-       (map tee-haku-ja-suodata-helmetin-äänikirjat)))
+       (map tee-haku-ja-suodata-helmetin-äänikirjat!)
+       poista-tyhjät
+       (map vector)
+       kirjoita-exceliin!))
