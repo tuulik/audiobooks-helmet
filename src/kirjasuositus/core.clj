@@ -49,15 +49,37 @@
       äänikirjat-hakutuloksesta
       kirjan-nimi-tulokseen))
 
+(defn tee-haku-ja-hae-avainsanat! [kirjan-nimi]
+  (println "haetaan" kirjan-nimi)
+  (->> kirjan-nimi
+       tee-finna-haku
+       muunna-hakutulos
+       (map :subjects)))
+
 (defn lue-kirjannimet-excelistä []
   (->> (docjure/load-workbook-from-resource "stories siivottu.xlsx")
        (docjure/select-sheet "Sheet1")
        (docjure/select-columns {:A :nimi})))
 
-(defn lue-kirjat-excelistä-ja-tee-haku []
+(defn lue-kirjat-excelistä-ja-hae-äänikirjat! []
   (->> (lue-kirjannimet-excelistä)
        (map :nimi)
        (map tee-haku-ja-suodata-helmetin-äänikirjat!)
        poista-tyhjät
        (map vector)
        kirjoita-exceliin!))
+
+(defn järjestä-arvoilla [tulokset]
+  #_(println "järjestä-arvoilla" tulokset)
+  (into (sorted-map-by (fn [avain1 avain2]
+                         (compare [(get tulokset avain2) avain2]
+                                  [(get tulokset avain1) avain1])))
+        tulokset))
+
+(defn lue-kirjat-excelistä-ja-hae-avainsanat! []
+  (->> (lue-kirjannimet-excelistä)
+       (map :nimi)
+       (map tee-haku-ja-hae-avainsanat!)
+       flatten
+       (frequencies)
+       (järjestä-arvoilla)))
